@@ -1,0 +1,24 @@
+import numpy as np
+
+def fitness_function(position): return np.sum(position ** 2)
+
+grid_size, num_iterations, neighborhood = (5, 5), 50, [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+def initialize_grid(): return np.random.uniform(-10, 10, (grid_size[0], grid_size[1], 2))
+
+def update_cell(grid, fitness, i, j):
+    best = grid[i, j]
+    best_fit = fitness[i, j]
+    for di, dj in neighborhood:
+        ni, nj = i + di, j + dj
+        if 0 <= ni < grid_size[0] and 0 <= nj < grid_size[1] and fitness[ni, nj] < best_fit:
+            best, best_fit = grid[ni, nj], fitness[ni, nj]
+    return best + np.random.uniform(-0.5, 0.5, best.shape)
+
+grid = initialize_grid()
+for _ in range(num_iterations):
+    fitness = np.array([[fitness_function(grid[i, j]) for j in range(grid_size[1])] for i in range(grid_size[0])])
+    grid = np.array([[update_cell(grid, fitness, i, j) for j in range(grid_size[1])] for i in range(grid_size[0])])
+
+best = grid[np.unravel_index(np.argmin(fitness), fitness.shape[:2])]
+print("Best solution:", best, "Fitness:", fitness_function(best))
