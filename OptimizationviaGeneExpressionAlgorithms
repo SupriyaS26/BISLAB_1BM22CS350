@@ -1,0 +1,32 @@
+import numpy as np
+
+# Optimization function (Sphere function: f(x) = sum(x^2))
+def fitness_function(position): return np.sum(position ** 2)
+
+# Parameters
+population_size, num_genes, mutation_rate, crossover_rate, num_generations = 20, 5, 0.1, 0.7, 50
+
+def initialize_population(): return np.random.uniform(-10, 10, (population_size, num_genes))
+
+def crossover(parent1, parent2):
+    if np.random.rand() < crossover_rate:
+        point = np.random.randint(1, num_genes)
+        return np.concatenate((parent1[:point], parent2[point:])), np.concatenate((parent2[:point], parent1[point:]))
+    return parent1, parent2
+
+def mutate(child):
+    return child + np.random.uniform(-1, 1, size=child.shape) * (np.random.rand(child.size) < mutation_rate)
+
+def evaluate_fitness(pop): return np.array([fitness_function(ind) for ind in pop])
+
+def select(pop, fit):
+    p = (fit.max() - fit + 1e-6) / (fit.max() - fit + 1e-6).sum()
+    return pop[np.random.choice(len(pop), len(pop), p=p)]
+
+population = initialize_population()
+for _ in range(num_generations):
+    fitness = evaluate_fitness(population)
+    population = np.array([mutate(c) for p1, p2 in zip(*[iter(select(population, fitness))] * 2) for c in crossover(p1, p2)])
+
+best = population[np.argmin(evaluate_fitness(population))]
+print("Best solution:", best, "Fitness:", fitness_function(best))
