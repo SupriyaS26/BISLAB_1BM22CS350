@@ -1,0 +1,43 @@
+import numpy as np
+from scipy.special import gamma
+
+# Objective function (Sphere function)
+def sphere_function(x):
+    return np.sum(x**2)
+
+# Lévy flight function
+def levy_flight(dim, beta=1.5):
+    sigma = (gamma(1 + beta) * np.sin(np.pi * beta / 2) /
+             (gamma((1 + beta) / 2) * beta * np.power(2, (beta - 1) / 2)))**(1 / beta)
+    u = np.random.normal(0, sigma, dim)
+    v = np.random.normal(0, 1, dim)
+    return u / np.power(np.abs(v), 1 / beta)
+
+# Cuckoo Search algorithm
+def cuckoo_search(nests, dim, max_iter, pa=0.25):
+    nests_position = np.random.uniform(-5, 5, (nests, dim))
+    fitness = np.apply_along_axis(sphere_function, 1, nests_position)
+    best_solution = nests_position[np.argmin(fitness)]
+
+    for _ in range(max_iter):
+        for i in range(nests):
+            new_solution = nests_position[i] + levy_flight(dim)
+            new_solution = np.clip(new_solution, -5, 5)
+            new_fitness = sphere_function(new_solution)
+            if new_fitness < fitness[i]:
+                nests_position[i], fitness[i] = new_solution, new_fitness
+        for i in range(nests):
+            if np.random.rand() < pa:
+                nests_position[i] = np.random.uniform(-5, 5, dim)
+                fitness[i] = sphere_function(nests_position[i])
+        best_solution = nests_position[np.argmin(fitness)]
+
+    return np.round(best_solution, 2), round(np.min(fitness), 2)
+
+# Parameters
+nests, dim, max_iter = 50, 10, 100
+
+# Run Cuckoo Search
+best_solution, best_fitness = cuckoo_search(nests, dim, max_iter)
+print("Best Solution:", best_solution)
+print("Best Fitness:", best_fitness)
