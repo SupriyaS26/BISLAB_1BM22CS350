@@ -1,0 +1,139 @@
+import numpy as np
+import random
+import math
+
+# 1. Define the Problem: City coordinates (for simplicity, random cities)
+class TSPProblem:
+    def __init__(self, cities):
+        self.cities = cities
+        self.num_cities = len(cities)
+
+    def distance(self, city1, city2):
+        return np.linalg.norm(np.array(self.cities[city1]) - np.array(self.cities[city2]))
+
+# 2. Initialize Parameters
+class ACO:
+    def __init__(self, problem, num_ants, num_iterations, alpha=1.0, beta=2.0, rho=0.1, q=100):
+        self.problem = problem
+        self.num_ants = num_ants
+        self.num_iterations = num_iterations
+        self.alpha = alpha      # Influence of pheromone
+        self.beta = beta        # Influence of heuristic (distance)
+        self.rho = rho          # Pheromone evaporation rate
+        self.q = q              # Pheromone deposit constant
+        self.pheromone = np.ones((problem.num_cities, problem.num_cities))  # Initial pheromone levels
+
+    def choose_next_city(self, ant, visited):
+        probabilities = []
+        current_city = ant[-1]
+
+        # Calculate the probability for each city (not yet visited)
+        for i in range(self.problem.num_cities):
+            if i not in visited:
+                pheromone = self.pheromone[current_city][i] ** self.alpha
+                distance = self.problem.distance(current_city, i)
+                heuristic = (1.0 / distance) ** self.beta
+                probabilities.append(pheromone * heuristic)
+            else:
+                probabilities.append(0)
+
+        # Normalize probabilities
+        total = sum(probabilities)
+        if total == 0:
+            return random.choice([i for i in range(self.problem.num_cities) if i not in visited])
+        probabilities = [prob / total for prob in probabilities]
+
+        # Choose the next city based on the probabilities
+        return random.choices(range(self.problem.num_cities), weights=probabilities, k=1)[0]
+
+    def construct_solution(self):
+        best_path = None
+        best_cost = float('inf')
+
+        # Each ant constructs a path
+        for _ in range(self.num_ants):
+            visited = set()
+            path = [random.randint(0, self.problem.num_cities - 1)]
+            visited.add(path[0])
+
+            while len(visited) < self.problem.num_cities:
+                next_city = self.choose_next_city(path, visited)
+                path.append(next_city)
+                visited.add(next_city)
+
+            # Return to the starting city to complete the cycle
+            path.append(path[0])
+            cost = self.calculate_cost(path)
+
+            # Keep track of the best solution
+            if cost < best_cost:
+                best_cost = cost
+                best_path = path
+
+        return best_path, best_cost
+
+    def calculate_cost(self, path):
+        cost = 0
+        for i in range(len(path) - 1):
+            cost += self.problem.distance(path[i], path[i + 1])
+        return cost
+
+    def update_pheromones(self, solutions):
+        # Evaporate pheromones
+        self.pheromone *= (1 - self.rho)
+
+        # Add pheromone to the paths of the ants
+        for path, cost in solutions:
+            for i in range(len(path) - 1):
+                self.pheromone[path[i]][path[i + 1]] += self.q / cost
+
+    def run(self):
+        best_overall_path = None
+        best_overall_cost = float('inf')
+
+        for iteration in range(self.num_iterations):
+            solutions = []
+            for _ in range(self.num_ants):
+                path, cost = self.construct_solution()
+                solutions.append((path, cost))
+
+            # Update pheromones based on the solutions
+            self.update_pheromones(solutions)
+
+            # Keep track of the best solution found
+            for path, cost in solutions:
+                if cost < best_overall_cost:
+                    best_overall_cost = cost
+                    best_overall_path = path
+
+            #print(f"Iteration {iteration + 1}/{self.num_iterations}, Best Cost: {best_overall_cost}")
+
+        return best_overall_path, best_overall_cost
+
+# 3. Example usage
+
+# Function to input cities from the user
+def input_cities():
+    num_cities = int(input("Enter the number of cities: "))
+    cities = []
+    for i in range(num_cities):
+        x, y = map(float, input(f"Enter coordinates for city {i+1} (x, y): ").split())
+        cities.append((x, y))
+    return cities
+
+# 4. Get cities input from user
+cities = input_cities()
+
+# Initialize TSP problem and ACO
+problem = TSPProblem(cities)
+aco = ACO(problem, num_ants=10, num_iterations=100)
+
+# Run ACO
+best_path, best_cost = aco.run()
+best_cost_rounded = round(best_cost, 2)
+
+
+# Output the best solution
+print(f"\nBest path found: {best_path}")
+
+print(f"Best cost found: {best_cost_rounded}")
