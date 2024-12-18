@@ -1,0 +1,71 @@
+import random
+import numpy as np
+
+def objective_function(x):
+    # Define the objective function to be minimized
+    return x**2
+
+def generate_initial_population(population_size, bounds):
+    # Generate an initial population of potential solutions
+    population = []
+    for _ in range(population_size):
+        x = random.uniform(bounds[0], bounds[1])
+        population.append(x)
+    return population
+
+def evaluate_fitness(population):
+    # Evaluate the fitness of each individual in the population
+    fitness = []
+    for x in population:
+        fitness.append(objective_function(x))
+    return fitness
+
+def selection(population, fitness, num_parents):
+    # Select individuals based on their fitness to reproduce
+    parents = []
+    for _ in range(num_parents):
+        max_fitness_idx = np.argmax(fitness)
+        parents.append(population[max_fitness_idx])
+        fitness[max_fitness_idx] = -float('inf')  # Set fitness to -inf to avoid re-selection
+    return parents
+
+def crossover(parents, crossover_rate):
+    # Perform crossover between selected individuals to produce offspring
+    offspring = []
+    for _ in range(len(parents) // 2):
+        parent1, parent2 = random.sample(parents, 2)
+        if random.random() < crossover_rate:
+            x1, x2 = parent1, parent2
+            x_offspring = (x1 + x2) / 2
+            offspring.append(x_offspring)
+    return offspring
+
+def mutation(offspring, mutation_rate, bounds):
+    # Apply mutation to the offspring to maintain genetic diversity
+    for i in range(len(offspring)):
+        if random.random() < mutation_rate:
+            offspring[i] += random.uniform(-0.1, 0.1) * (bounds[1] - bounds[0])
+            offspring[i] = max(bounds[0], min(offspring[i], bounds[1]))  # Ensure bounds
+    return offspring
+
+def genetic_algorithm(population_size, mutation_rate, crossover_rate, num_generations, bounds):
+    population = generate_initial_population(population_size, bounds)
+    for generation in range(num_generations):
+        fitness = evaluate_fitness(population)
+        parents = selection(population, fitness, population_size // 2)
+        offspring = crossover(parents, crossover_rate)
+        offspring = mutation(offspring, mutation_rate, bounds)
+        population = offspring + parents
+    best_solution = min(population, key=objective_function)
+    return best_solution
+
+# Set parameters
+population_size = 100
+mutation_rate = 0.01
+crossover_rate = 0.5
+num_generations = 100
+bounds = (-10, 10)
+
+# Run the Genetic Algorithm
+best_solution = genetic_algorithm(population_size, mutation_rate, crossover_rate, num_generations, bounds)
+print("Best solution:", best_solution)
