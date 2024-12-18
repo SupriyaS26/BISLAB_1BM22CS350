@@ -1,0 +1,44 @@
+import numpy as np
+
+# Generic Optimization Function (e.g., a simple sphere function)
+def optimization_function(x):
+    # This is just a simple quadratic function: f(x) = sum(x_i^2)
+    return np.sum(x**2)
+
+# GWO Implementation
+class GWO:
+    def __init__(self, func, dim, n_wolves, max_iter, lb, ub):
+        self.func, self.dim, self.n_wolves, self.max_iter, self.lb, self.ub = func, dim, n_wolves, max_iter, lb, ub
+        self.pos = np.random.uniform(lb, ub, (n_wolves, dim))
+        self.alpha_pos, self.alpha_score = np.zeros(dim), float('inf')
+
+    def optimize(self):
+        for t in range(self.max_iter):
+            fitness = np.apply_along_axis(self.func, 1, self.pos)
+            sorted_idx = np.argsort(fitness)
+            self.alpha_pos, self.alpha_score = self.pos[sorted_idx[0]], fitness[sorted_idx[0]]
+
+            # Update positions of wolves
+            a = 2 - t * (2 / self.max_iter)
+            for i in range(self.n_wolves):
+                r1, r2 = np.random.rand(2)
+                A = 2 * a * r1 - a
+                C = 2 * r2
+                self.pos[i] = self.alpha_pos - A * abs(C * self.alpha_pos - self.pos[i])
+                self.pos[i] = np.clip(self.pos[i], self.lb, self.ub)
+
+            # Uncomment to see iteration progress
+            #print(f"Iter {t+1}, Best Fitness: {self.alpha_score}")
+
+        return self.alpha_pos, self.alpha_score
+
+# Parameters
+dim, n_wolves, max_iter, lb, ub = 10, 30, 100, -5.12, 5.12
+
+# Run GWO with the generic optimization function
+gwo = GWO(optimization_function, dim, n_wolves, max_iter, lb, ub)
+best_pos, best_fitness = gwo.optimize()
+
+# Print results with 2 decimal places
+print(f"Best Position: {(best_pos)}")
+print(f"Best Fitness: {(best_fitness)}")
